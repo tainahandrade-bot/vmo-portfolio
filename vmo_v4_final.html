@@ -171,7 +171,7 @@ input[type=checkbox]{width:13px;height:13px;accent-color:var(--purple);cursor:po
 /* Portfolio table */
 table.pft{width:100%;border-collapse:collapse;font-size:9.5px}
 table.pft th{background:var(--bg2);border-bottom:1px solid var(--border);padding:5px 8px;text-align:left;font-size:9px;font-weight:600;color:var(--text3);position:sticky;top:0;z-index:2;white-space:nowrap;box-shadow:0 1px 0 var(--border)}
-table.pft td{padding:4px 8px;border-bottom:.5px solid var(--border);vertical-align:middle}
+table.pft td{padding:4px 8px;border-bottom:.5px solid var(--border);vertical-align:middle;max-width:360px}
 table.pft tr:hover td{background:var(--bg2)}
 .prio-badge{font-size:9px;padding:1px 5px;background:#fef3c7;color:#92400e;border-radius:4px;font-weight:700;white-space:nowrap}
 .gp-tag{font-size:9px;background:#ede9fe;color:#5b21b6;padding:2px 6px;border-radius:10px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;display:inline-block}
@@ -396,7 +396,7 @@ table.pft tr:hover td{background:var(--bg2)}
 
 <!-- ══ PORTFOLIO ══ -->
 
-<div class="view active" id="view-portfolio" style="overflow-y:auto;overflow-x:hidden">
+<div class="view active" id="view-portfolio" style="overflow-y:auto;overflow-x:auto">
   <div id="pf-topbar" style="position:sticky;top:0;z-index:10;background:var(--bg);display:flex;align-items:center;gap:7px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
     <div class="sb2"><i class="ti ti-search"></i><input id="pf-search" type="text" placeholder="Buscar projeto..." oninput="renderPortfolio()"></div>
     <div class="filter-sep"></div>
@@ -792,7 +792,7 @@ function renderPortfolio(){
       <td><div style="display:flex;align-items:center;gap:5px;cursor:pointer;overflow:hidden" onclick="openProject('${p.key}')">
         <div style="width:20px;height:20px;border-radius:4px;background:${ib};color:${ic};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-briefcase" style="font-size:9px"></i></div>
         <span style="font-size:9px;color:var(--blue);background:#e8ecfd;padding:1px 4px;border-radius:3px;font-weight:700;white-space:nowrap;flex-shrink:0">${p.key}</span>
-        <span style="font-weight:500;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0" title="${p.summary}">${p.summary}</span>
+        <span style="font-weight:500;font-size:9.5px;overflow:hidden;flex:1;min-width:0;word-break:break-word;line-height:1.35" title="${p.summary}">${p.summary.length>57?p.summary.slice(0,57)+'<br>'+p.summary.slice(57):p.summary}</span>
       </div></td>
       <td><span class="spill" style="background:${ib};color:${ic}">${p.type}</span></td>
       <td><span class="spill ${JIRA_SC[p.status]||'s-bkl'}">${p.status}</span></td>
@@ -910,7 +910,7 @@ function renderKPI(){
       '<div style="display:flex;gap:4px;margin-right:6px" id="active-filters-row"></div>')+
     `<table class="pft"><thead><tr>
       <th style="width:34px">#</th>
-      <th style="width:340px">Projeto</th>
+      <th style="width:360px">Projeto</th>
       <th style="width:75px">Tipo</th>
       <th style="width:108px">Status Jira</th>
       <th style="width:90px">GP Alocado</th>
