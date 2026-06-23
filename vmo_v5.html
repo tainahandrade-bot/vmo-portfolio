@@ -2120,8 +2120,38 @@ async function persistUpdates(key) {
   } catch(e) { console.error('persistUpdates error:', e); }
 }
 async function autoLoadOnLogin() {
-  // Step 1: Load schedules + users from Firebase
-  await loadSchedulesFromSheet();
+  // Step 1: Load from Firebase
+  if (firebaseReady && db) {
+    try {
+      setSyncTxt('syncing', 'Carregando...');
+      // Load schedules
+      const snap = await db.collection('schedules').get();
+      snap.forEach(doc => {
+        schedules[doc.id] = { ...doc.data(), updates: schedules[doc.id]?.updates || [] };
+      });
+      // Load updates
+      const snapU = await db.collection('updates').get();
+      snapU.forEach(doc => {
+        if (schedules[doc.id]) schedules[doc.id].updates = doc.data().updates || [];
+        else schedules[doc.id] = { milestones:[], tasks:[], access:[], auditLog:[], updates: doc.data().updates||[], calendar:'BR', baseline:null };
+      });
+      // Load users
+      const snapUsers = await db.collection('app_config').doc('users').get();
+      if (snapUsers.exists) {
+        const saved = snapUsers.data().registry || [];
+        saved.forEach(u => {
+          const idx = USER_REGISTRY.findIndex(x => x.email === u.email);
+          if (idx >= 0) USER_REGISTRY[idx] = { ...USER_REGISTRY[idx], ...u };
+          else USER_REGISTRY.push(u);
+        });
+      }
+      setSyncTxt('ok', '✓ Dados carregados');
+      setTimeout(() => setSyncTxt('idle', ''), 2500);
+    } catch(e) {
+      console.error('Firebase load error:', e);
+      setSyncTxt('idle', '');
+    }
+  }
   // Step 2: Render immediately with what we have
   renderKPI();
   renderPortfolio();
