@@ -695,20 +695,21 @@ function showLoginErr(msg) {
 // ── APPLY UI RESTRICTIONS ──────────────────────────────────
 function applyRoleUI() {
   const r = currentUser?.role;
-  // Hide nav tabs for externals
+  const sb = document.getElementById('jira-sync-btn');
+
   if (r === 'external') {
+    // Externals: only see schedule tab
     document.querySelectorAll('.nav-tab').forEach(t => {
       const view = t.dataset.view;
       if (view !== 'schedule') t.style.display = 'none';
     });
-    // Hide sync button for externals
-    const sb = document.getElementById('jira-sync-btn');
     if (sb) sb.style.display = 'none';
-  }
-  // Hide edit controls for viewers
-  if (r === 'viewer') {
-    const sb = document.getElementById('jira-sync-btn');
+  } else if (r === 'viewer') {
+    // Viewers: see all tabs but no sync/edit
     if (sb) sb.style.display = 'none';
+  } else {
+    // Admin & Editor: show sync button
+    if (sb) sb.style.display = '';
   }
 }
 
