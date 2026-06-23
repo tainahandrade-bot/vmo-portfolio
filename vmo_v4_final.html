@@ -918,6 +918,12 @@ function setF(f,el){
   renderPortfolio();
 }
 function renderPortfolio(){
+  // Sort PROJECTS by priority (ascending, nulls last)
+  PROJECTS.sort((a,b)=>{
+    const pa=a.priority!=null?a.priority:9999;
+    const pb=b.priority!=null?b.priority:9999;
+    return pa-pb;
+  });
   renderKPI();renderCalendar();
   const q=(document.getElementById('pf-search').value||'').toLowerCase();
   const statusF=msFilters.status;
@@ -1465,14 +1471,22 @@ function renderRows(){
       const prog2=taskProg(t);const de2=t.start&&t.deadline?diffD(pd(t.start),pd(t.deadline))+'d':'—';const dr2=t.start&&t.endReal?diffD(pd(t.start),pd(t.endReal))+'d':'—';
       const aHtml2=(t.assignees||[]).map(a=>`<span class="atag ${a.type==='external'?'ext':''}">${a.name.split(' ')[0]}</span>`).join('');
       const stCls2=strikeTask&&t.status==='done'?' st-task':'';
-      // Show dep as line numbers
-      const allDeps=(t.depIds||[]).length>0?t.depIds:(t.depId?[t.depId]:[]);
+      // Show dep as line numbers only
+      const allDeps=(t.depIds&&t.depIds.length>0)?t.depIds:(t.depId?[t.depId]:[]);
       const depLineNums=allDeps.map(id=>{
-        let lbl='?';
-        (sched.milestones||[]).forEach((ms3,mi3)=>{(sched.tasks||[]).filter(tx=>tx.msId===ms3.id).forEach((tx,ti3)=>{if(tx.id===id)lbl=`${mi3+1}.${ti3+1}`;});});
+        let lbl=null;
+        (sched.milestones||[]).forEach((ms3,mi3)=>{
+          (sched.tasks||[]).filter(tx=>tx.msId===ms3.id).forEach((tx,ti3)=>{
+            if(tx.id===id)lbl=`${mi3+1}.${ti3+1}`;
+          });
+        });
         return lbl;
-      }).join(',');
-      const depLbl=depLineNums?`<span style="font-size:8.5px;color:var(--text3);font-weight:600" title="${DEP_LABELS[t.depType]||''}">${depLineNums}${t.depType?` [${t.depType}]`:''}</span>`:'';
+      }).filter(Boolean).join(', ');
+      // Build tooltip with names for reference
+      const depTooltip=allDeps.map(id=>{
+        const tx=(sched.tasks||[]).find(x=>x.id===id);return tx?tx.name:'';
+      }).filter(Boolean).join(' | ');
+      const depLbl=depLineNums?`<span style="font-size:8.5px;color:var(--text3);font-weight:600;white-space:nowrap" title="${depTooltip}${t.depType?' ['+DEP_LABELS[t.depType]+']':''}">${depLineNums}${t.depType?'<span style="font-size:7.5px;opacity:.7"> ['+t.depType+']</span>':''}</span>`:'—';
       const jiraKey=t.jiraLink?t.jiraLink.split('/').pop():'';
       const jiraLinkHtml=t.jiraLink?`<a href="${t.jiraLink}" target="_blank" title="Abrir ${jiraKey} no Jira" style="font-size:8.5px;color:var(--blue);display:flex;align-items:center;gap:3px;padding:2px 5px;background:#e8ecfd;border-radius:4px;font-weight:600;white-space:nowrap"><i class="ti ti-brand-jira" style="font-size:10px"></i>${jiraKey}${t.jiraLinkStatus?` <span class="spill ${JIRA_SC[t.jiraLinkStatus]||'s-bkl'}" style="font-size:7px">${t.jiraLinkStatus.slice(0,6)}</span>`:''}</a>`:'—';
       const tr2=document.createElement('div');const hasExt=(t.assignees||[]).some(a=>a.type==='external');
@@ -1494,7 +1508,7 @@ function renderRows(){
         <div class="td" style="width:${C.dr}px"><span style="font-size:9px;color:${dr2!=='—'&&de2!=='—'&&parseInt(dr2)>parseInt(de2)?'var(--red)':'var(--green)'}">${dr2}</span></div>
         <div class="td" style="width:${C.prog}px"><div style="display:flex;align-items:center;gap:3px"><div class="prog-track" style="width:42px"><div class="prog-fill" style="width:${prog2}%;background:${ms.color}"></div></div><span style="font-size:9px;color:var(--text3)">${prog2}%</span></div></div>
         <div class="td" style="width:${C.resp}px"><div style="display:flex;gap:2px;overflow:hidden">${aHtml2||'—'}</div></div>
-        <div class="td" style="width:${C.dep}px">${depLbl}${depT?`<span style="font-size:8.5px;color:var(--text3)" title="${depT.name}">${depT.name.slice(0,8)}…</span>`:'—'}</div>
+        <div class="td" style="width:${C.dep}px">${depLbl}</div>
         <div class="td" style="width:${C.st}px"><span class="tbadge2 ${SC[t.status]}">${SL[t.status]}</span></div>
         <div class="td" style="width:${C.timing}px">${timingBadge(t,false)}</div>
         <div class="td" style="width:${C.jiralink}px">${jiraLinkHtml}</div>
@@ -1673,8 +1687,11 @@ function openTaskModal(msId,taskId){editTaskMsId=msId;editTaskId=taskId;depModeV
   });
   const depInput=document.getElementById('t-dep');
   // Fill with current deps as line numbers
-  const currentDeps=(t?.depIds||[]).length>0?t.depIds:(t?.depId?[t.depId]:[]);
-  depInput.value=currentDeps.map(id=>lineRevMap[id]||'').filter(Boolean).join(', ');
+  const currentDeps=(t?.depIds&&t.depIds.length>0)?t.depIds:(t?.depId?[t.depId]:[]);
+  depInput.value=currentDeps.map(id=>{
+    const lbl=lineRevMap[id];
+    return lbl||null;
+  }).filter(Boolean).join(', ');
   // Preview
   function updateDepPreview(){
     const preview=document.getElementById('t-dep-preview');
