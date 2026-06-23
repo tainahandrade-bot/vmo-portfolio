@@ -642,6 +642,7 @@ function finalizeLogin(email, name, picture) {
   const roleLabels = { admin:'Admin', editor:'Editor', viewer:'Visualizador', external:'Externo' };
   document.getElementById('tn-role').textContent = roleLabels[role] || role;
   applyRoleUI();
+  initFilters(); // must run before renderPortfolio
   autoLoadOnLogin();
 }
 
@@ -1053,6 +1054,7 @@ function secHdr(sec, iconBg, iconColor, iconClass, title, subtitle, extraRight='
 }
 
 function renderKPI(){
+  try {
   const total=PROJECTS.length;
   const byStatus={};
   PROJECTS.forEach(p=>{byStatus[p.status]=(byStatus[p.status]||0)+1;});
@@ -1150,6 +1152,7 @@ function renderKPI(){
     if(body)body.classList.toggle('collapsed',!sectionState[sec]);
     if(ch)ch.style.transform=sectionState[sec]?'':'rotate(180deg)';
   });
+  } catch(e) { console.error('renderKPI error:', e); }
 }
 
 function filterByStatus(s){
