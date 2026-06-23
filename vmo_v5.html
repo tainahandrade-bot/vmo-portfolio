@@ -351,7 +351,11 @@ table.pft tr:hover td{background:var(--bg2)}
         </button>
       </div>
     </div>
-    <button class="login-btn" onclick="doLoginManual()" style="margin-top:14px">Entrar</button>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:10px">
+      <input type="checkbox" id="remember-me" style="width:14px;height:14px;accent-color:var(--purple);cursor:pointer">
+      <label for="remember-me" style="font-size:10.5px;color:var(--text2);cursor:pointer">Lembrar de mim por 7 dias</label>
+    </div>
+    <button class="login-btn" onclick="doLoginManual()" style="margin-top:10px">Entrar</button>
     <div class="login-hint" style="margin-top:10px">
       Acesso exclusivo para <b>@bemobi.com</b>.<br>
       Primeira vez? Solicite seu acesso a um administrador.
@@ -382,6 +386,7 @@ table.pft tr:hover td{background:var(--bg2)}
     <button class="tn-btn" id="audit-btn" onclick="openAuditModal()" style="display:none"><i class="ti ti-history" style="font-size:10px"></i> Histórico</button>
     <div class="tn-sep"></div>
     <div class="tn-user"><div class="tn-avatar" id="tn-avatar">T</div><span class="tn-uname" id="tn-uname">Tainah</span><span class="tn-role" id="tn-role">Editor</span></div>
+    <button class="tn-btn" onclick="doLogout()" title="Sair da conta" style="padding:4px 8px"><i class="ti ti-logout" style="font-size:11px"></i></button>
   </div>
 </div>
 
@@ -629,7 +634,7 @@ function doLoginManual() {
 let currentUser = null;
 let globalAccess = {};
 
-function finalizeLogin(email, name, picture) {
+function finalizeLogin(email, name, picture, persist=true) {
   const role = resolveRole(email);
   currentUser = { name, email, role,
     isAdmin:  role === 'admin',
@@ -641,8 +646,13 @@ function finalizeLogin(email, name, picture) {
   document.getElementById('tn-avatar').textContent = name.charAt(0).toUpperCase();
   const roleLabels = { admin:'Admin', editor:'Editor', viewer:'Visualizador', external:'Externo' };
   document.getElementById('tn-role').textContent = roleLabels[role] || role;
+  // Save session to localStorage
+  if (persist) {
+    const remember = document.getElementById('remember-me')?.checked || false;
+    saveSession(currentUser, remember);
+  }
   applyRoleUI();
-  initFilters(); // must run before renderPortfolio
+  initFilters();
   autoLoadOnLogin();
 }
 
@@ -674,8 +684,66 @@ function applyRoleUI() {
 }
 
 // ── PAGE LOAD ──────────────────────────────────────────────────────────────
+// ── SESSION MANAGEMENT ───────────────────────────────────
+const SESSION_KEY = 'vmo_session';
+
+function saveSession(user, remember) {
+  const expiry = Date.now() + (remember ? 7 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000);
+  const session = { email: user.email, name: user.name, role: user.role, expiry };
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch(e) { console.warn('Could not save session:', e); }
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (Date.now() > session.expiry) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch(e) { return null; }
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
+
+function doLogout() {
+  if (!confirm('Deseja sair da sua conta?')) return;
+  clearSession();
+  currentUser = null;
+  // Reset UI
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-err').style.display = 'none';
+  document.getElementById('remember-me').checked = false;
+  // Reset nav
+  document.querySelectorAll('.nav-tab').forEach(t => t.style.display = '');
+  showView('portfolio');
+}
+
 window.addEventListener('load', function() {
   initFirebase();
+  // Try to restore session
+  const session = loadSession();
+  if (session) {
+    // Validate user still exists and is active
+    const userInRegistry = USER_REGISTRY.find(u =>
+      u.email.toLowerCase() === session.email.toLowerCase() && u.active
+    );
+    if (userInRegistry) {
+      finalizeLogin(session.email, session.name, null, false); // false = don't save again
+      return;
+    } else {
+      clearSession(); // user was deactivated
+    }
+  }
+  // No valid session — show login screen
 });
 
 // ── USER MANAGEMENT (admin only) ──────────────────────────────────────────
