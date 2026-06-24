@@ -38,6 +38,20 @@ body{font-family:'Poppins',system-ui,sans-serif;font-size:11px;background:var(--
 .tn-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6924E1,#027BFF);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
 .tn-uname{font-size:10.5px;color:rgba(255,255,255,.8);white-space:nowrap}
 .tn-role{font-size:9px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.6);padding:1px 6px;border-radius:4px}
+.tn-profile{position:relative;display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 8px;border-radius:7px;transition:background .15s}
+.tn-profile:hover{background:rgba(255,255,255,.1)}
+.tn-profile-menu{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(11,27,115,.2);min-width:200px;z-index:200;display:none;overflow:hidden;border:1px solid var(--border)}
+.tn-profile-menu.open{display:block}
+.tn-pm-header{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.tn-pm-name{font-size:12px;font-weight:600;color:var(--text)}
+.tn-pm-email{font-size:10px;color:var(--text3);margin-top:1px}
+.tn-pm-role{font-size:9px;background:#ede9fe;color:#6d28d9;padding:2px 7px;border-radius:10px;display:inline-block;margin-top:4px;font-weight:600}
+.tn-pm-item{display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:11px;color:var(--text);transition:background .1s}
+.tn-pm-item:hover{background:var(--bg2)}
+.tn-pm-item i{font-size:13px;color:var(--text3);width:16px}
+.tn-pm-item.danger{color:var(--red)}
+.tn-pm-item.danger i{color:var(--red)}
+.tn-pm-sep{height:1px;background:var(--border);margin:3px 0}
 .tn-sync{font-size:9px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:3px}
 .tn-btn{font-size:10px;padding:4px 10px;border:1px solid rgba(255,255,255,.2);border-radius:5px;color:rgba(255,255,255,.75);background:transparent;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all .15s}
 .tn-btn:hover{background:rgba(255,255,255,.12);color:#fff}
@@ -379,15 +393,39 @@ table.pft tr:hover td{background:var(--bg2)}
     </button>
     <span class="tn-sync" id="sync-txt"><i class="ti ti-brand-jira" style="font-size:11px"></i> one-bemobi.atlassian.net</span>
     <div class="tn-sep"></div>
-    <button class="tn-btn" id="access-btn" onclick="openAccessModal()" style="display:none"><i class="ti ti-users" style="font-size:10px"></i> Acessos</button>
-    <button class="tn-btn" id="users-btn" onclick="openUserMgmtModal()" style="display:none"><i class="ti ti-user-plus" style="font-size:10px"></i> Usuários</button>
-    <button class="tn-btn" onclick="openChangePwdModal()"><i class="ti ti-key" style="font-size:10px"></i> Senha</button>
     <button class="tn-btn" id="export-btn" onclick="openExportModal()" style="display:none"><i class="ti ti-download" style="font-size:10px"></i> Exportar</button>
     <button class="tn-btn" id="audit-btn" onclick="openAuditModal()" style="display:none"><i class="ti ti-history" style="font-size:10px"></i> Histórico</button>
     <div class="tn-sep"></div>
-    <div class="tn-user"><div class="tn-avatar" id="tn-avatar">T</div><span class="tn-uname" id="tn-uname">Tainah</span><span class="tn-role" id="tn-role">Editor</span></div>
-    <div class="tn-sep"></div>
-    <button class="tn-btn" id="logout-btn" onclick="doLogout()" title="Sair da conta" style="padding:4px 10px;color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3);flex-shrink:0"><i class="ti ti-logout" style="font-size:11px"></i> Sair</button>
+    <!-- Profile dropdown -->
+    <div class="tn-profile" id="tn-profile" onclick="toggleProfileMenu()">
+      <div class="tn-avatar" id="tn-avatar">T</div>
+      <div style="display:flex;flex-direction:column;line-height:1.2">
+        <span class="tn-uname" id="tn-uname" style="font-size:11px">Tainah</span>
+        <span class="tn-role" id="tn-role" style="font-size:9px;margin-top:1px">Admin</span>
+      </div>
+      <i class="ti ti-chevron-down" style="font-size:10px;color:rgba(255,255,255,.5);margin-left:2px"></i>
+      <!-- Dropdown menu -->
+      <div class="tn-profile-menu" id="tn-profile-menu">
+        <div class="tn-pm-header">
+          <div class="tn-pm-name" id="pm-name">Tainah Andrade</div>
+          <div class="tn-pm-email" id="pm-email">tainah@bemobi.com</div>
+          <span class="tn-pm-role" id="pm-role">Admin</span>
+        </div>
+        <div class="tn-pm-item" onclick="event.stopPropagation();openChangePwdModal();closeProfileMenu()">
+          <i class="ti ti-key"></i> Alterar senha
+        </div>
+        <div class="tn-pm-item" id="pm-users-btn" onclick="event.stopPropagation();openUserMgmtModal();closeProfileMenu()" style="display:none">
+          <i class="ti ti-users"></i> Gerenciar usuários
+        </div>
+        <div class="tn-pm-item" id="pm-access-btn" onclick="event.stopPropagation();openAccessModal();closeProfileMenu()" style="display:none">
+          <i class="ti ti-shield-lock"></i> Gerenciar acessos
+        </div>
+        <div class="tn-pm-sep"></div>
+        <div class="tn-pm-item danger" onclick="event.stopPropagation();doLogout()">
+          <i class="ti ti-logout"></i> Sair da conta
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -648,6 +686,13 @@ function finalizeLogin(email, name, picture, persist=true) {
   document.getElementById('tn-avatar').textContent = name.charAt(0).toUpperCase();
   const roleLabels = { admin:'Admin', editor:'Editor', viewer:'Visualizador', external:'Externo' };
   document.getElementById('tn-role').textContent = roleLabels[role] || role;
+  // Fill profile menu
+  const pmName = document.getElementById('pm-name');
+  const pmEmail = document.getElementById('pm-email');
+  const pmRole = document.getElementById('pm-role');
+  if (pmName) pmName.textContent = name;
+  if (pmEmail) pmEmail.textContent = email;
+  if (pmRole) { pmRole.textContent = roleLabels[role] || role; pmRole.style.background = role==='admin'?'#ede9fe':role==='editor'?'#dbeafe':'#f1f5f9'; pmRole.style.color = role==='admin'?'#6d28d9':role==='editor'?'#1d4ed8':'#475569'; }
   // Save session to localStorage
   if (persist) {
     const remember = document.getElementById('remember-me')?.checked || false;
@@ -680,8 +725,11 @@ function applyRoleUI() {
     if (sb) sb.style.display = 'none';
   } else {
     if (sb) sb.style.display = '';
-    const ub = document.getElementById('users-btn');
-    if (ub) ub.style.display = isAdmin() ? '' : 'none';
+    // Show admin-only menu items
+    const pmUsers = document.getElementById('pm-users-btn');
+    const pmAccess = document.getElementById('pm-access-btn');
+    if (pmUsers) pmUsers.style.display = isAdmin() ? '' : 'none';
+    if (pmAccess) pmAccess.style.display = isAdmin() ? '' : 'none';
   }
 }
 
@@ -714,6 +762,14 @@ function clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
 
+function toggleProfileMenu() {
+  const menu = document.getElementById('tn-profile-menu');
+  if (menu) menu.classList.toggle('open');
+}
+function closeProfileMenu() {
+  const menu = document.getElementById('tn-profile-menu');
+  if (menu) menu.classList.remove('open');
+}
 function doLogout() {
   if (!confirm('Deseja sair da sua conta?')) return;
   clearSession();
@@ -731,6 +787,11 @@ function doLogout() {
 
 window.addEventListener('load', function() {
   initFirebase();
+  // Close profile menu when clicking outside
+  document.addEventListener('click', function(e) {
+    const profile = document.getElementById('tn-profile');
+    if (profile && !profile.contains(e.target)) closeProfileMenu();
+  });
   // Try to restore session
   const session = loadSession();
   if (session) {
