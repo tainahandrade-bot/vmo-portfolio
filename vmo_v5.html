@@ -396,7 +396,7 @@ table.pft tr:hover td{background:var(--bg2)}
     <button class="tn-btn" id="export-btn" onclick="openExportModal()" style="display:none"><i class="ti ti-download" style="font-size:10px"></i> Exportar</button>
     <button class="tn-btn" id="audit-btn" onclick="openAuditModal()" style="display:none"><i class="ti ti-history" style="font-size:10px"></i> Histórico</button>
     <div class="tn-sep"></div>
-    <!-- Profile dropdown -->
+    <!-- Profile button -->
     <div class="tn-profile" id="tn-profile" onclick="toggleProfileMenu(event)">
       <div class="tn-avatar" id="tn-avatar">T</div>
       <div style="display:flex;flex-direction:column;line-height:1.2">
@@ -404,27 +404,6 @@ table.pft tr:hover td{background:var(--bg2)}
         <span class="tn-role" id="tn-role" style="font-size:9px;margin-top:1px">Admin</span>
       </div>
       <i class="ti ti-chevron-down" style="font-size:10px;color:rgba(255,255,255,.5);margin-left:2px"></i>
-      <!-- Dropdown menu -->
-      <div class="tn-profile-menu" id="tn-profile-menu">
-        <div class="tn-pm-header">
-          <div class="tn-pm-name" id="pm-name">Tainah Andrade</div>
-          <div class="tn-pm-email" id="pm-email">tainah@bemobi.com</div>
-          <span class="tn-pm-role" id="pm-role">Admin</span>
-        </div>
-        <div class="tn-pm-item" onclick="event.stopPropagation();openChangePwdModal();closeProfileMenu()">
-          <i class="ti ti-key"></i> Alterar senha
-        </div>
-        <div class="tn-pm-item" id="pm-users-btn" onclick="event.stopPropagation();openUserMgmtModal();closeProfileMenu()" style="display:none">
-          <i class="ti ti-users"></i> Gerenciar usuários
-        </div>
-        <div class="tn-pm-item" id="pm-access-btn" onclick="event.stopPropagation();openAccessModal();closeProfileMenu()" style="display:none">
-          <i class="ti ti-shield-lock"></i> Gerenciar acessos
-        </div>
-        <div class="tn-pm-sep"></div>
-        <div class="tn-pm-item danger" onclick="event.stopPropagation();doLogout()">
-          <i class="ti ti-logout"></i> Sair da conta
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -728,8 +707,8 @@ function applyRoleUI() {
     // Show admin-only menu items
     const pmUsers = document.getElementById('pm-users-btn');
     const pmAccess = document.getElementById('pm-access-btn');
-    if (pmUsers) pmUsers.style.display = isAdmin() ? '' : 'none';
-    if (pmAccess) pmAccess.style.display = isAdmin() ? '' : 'none';
+    if (pmUsers) pmUsers.style.display = isAdmin() ? 'flex' : 'none';
+    if (pmAccess) pmAccess.style.display = isAdmin() ? 'flex' : 'none';
   }
 }
 
@@ -766,8 +745,18 @@ function toggleProfileMenu(e) {
   if(e) e.stopPropagation();
   const menu = document.getElementById('tn-profile-menu');
   if (!menu) return;
-  const isOpen = menu.style.display === 'block';
-  menu.style.display = isOpen ? 'none' : 'block';
+  if (menu.style.display === 'block') {
+    menu.style.display = 'none';
+  } else {
+    // Position under the profile button
+    const btn = document.getElementById('tn-profile');
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.right = (window.innerWidth - rect.right) + 'px';
+    }
+    menu.style.display = 'block';
+  }
 }
 function closeProfileMenu() {
   const menu = document.getElementById('tn-profile-menu');
@@ -2591,5 +2580,28 @@ schedules['VMO-304']={
 };
 
 </script>
+
+<!-- Profile menu — fixed overlay, outside topnav to avoid z-index/overflow issues -->
+<div id="tn-profile-menu" style="display:none;position:fixed;top:50px;right:12px;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(11,27,115,.2);min-width:210px;z-index:9999;overflow:hidden;border:1px solid #e2e6f0">
+  <div style="padding:12px 14px;border-bottom:1px solid #e2e6f0;background:#f8f9fc">
+    <div style="font-size:12px;font-weight:600;color:#0f1623" id="pm-name">Tainah Andrade</div>
+    <div style="font-size:10px;color:#8a94a8;margin-top:1px" id="pm-email">tainah@bemobi.com</div>
+    <span style="font-size:9px;background:#ede9fe;color:#6d28d9;padding:2px 7px;border-radius:10px;display:inline-block;margin-top:4px;font-weight:600" id="pm-role">Admin</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:11px;color:#0f1623;transition:background .1s" onmouseenter="this.style.background='#f8f9fc'" onmouseleave="this.style.background=''" onclick="closeProfileMenu();openChangePwdModal()">
+    <i class="ti ti-key" style="font-size:13px;color:#8a94a8;width:16px"></i> Alterar senha
+  </div>
+  <div id="pm-users-btn" style="display:none;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:11px;color:#0f1623;transition:background .1s" onmouseenter="this.style.background='#f8f9fc'" onmouseleave="this.style.background=''" onclick="closeProfileMenu();openUserMgmtModal()">
+    <i class="ti ti-users" style="font-size:13px;color:#8a94a8;width:16px"></i> Gerenciar usuários
+  </div>
+  <div id="pm-access-btn" style="display:none;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:11px;color:#0f1623;transition:background .1s" onmouseenter="this.style.background='#f8f9fc'" onmouseleave="this.style.background=''" onclick="closeProfileMenu();openAccessModal()">
+    <i class="ti ti-shield-lock" style="font-size:13px;color:#8a94a8;width:16px"></i> Gerenciar acessos
+  </div>
+  <div style="height:1px;background:#e2e6f0;margin:3px 0"></div>
+  <div style="display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:11px;color:#dc2626;transition:background .1s" onmouseenter="this.style.background='#fee2e2'" onmouseleave="this.style.background=''" onclick="closeProfileMenu();doLogout()">
+    <i class="ti ti-logout" style="font-size:13px;color:#dc2626;width:16px"></i> Sair da conta
+  </div>
+</div>
+
 </body>
 </html>
