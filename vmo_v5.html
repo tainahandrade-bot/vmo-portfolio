@@ -23,7 +23,7 @@ body{font-family:'Poppins',system-ui,sans-serif;font-size:11px;background:var(--
 #shell{display:flex;flex-direction:column;height:100vh}
 
 /* ─── TOP NAV ─── */
-#topnav{display:flex;align-items:center;background:var(--navy);height:46px;flex-shrink:0;padding:0 16px;gap:0;z-index:20;box-shadow:0 2px 8px rgba(11,27,115,.18)}
+#topnav{display:flex;align-items:center;background:var(--navy);height:46px;flex-shrink:0;padding:0 16px;gap:0;z-index:20;box-shadow:0 2px 8px rgba(11,27,115,.18);overflow:hidden}
 .tn-logo{font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,#6924E1,#027BFF);padding:4px 12px;border-radius:20px;margin-right:16px;white-space:nowrap}
 .tn-sep{width:1px;background:rgba(255,255,255,.15);height:24px;margin:0 4px}
 .nav-tab{display:flex;align-items:center;gap:6px;padding:0 14px;height:46px;cursor:pointer;color:rgba(255,255,255,.65);font-size:11px;font-weight:500;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
@@ -33,7 +33,7 @@ body{font-family:'Poppins',system-ui,sans-serif;font-size:11px;background:var(--
 .nav-tab.disabled:hover{background:transparent;color:rgba(255,255,255,.4)}
 .nt-badge{font-size:9px;background:rgba(255,255,255,.18);padding:1px 5px;border-radius:10px}
 .nt-cs{font-size:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:1px 5px;border-radius:4px}
-#tn-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#tn-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .tn-user{display:flex;align-items:center;gap:7px}
 .tn-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6924E1,#027BFF);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
 .tn-uname{font-size:10.5px;color:rgba(255,255,255,.8);white-space:nowrap}
@@ -387,7 +387,7 @@ table.pft tr:hover td{background:var(--bg2)}
     <div class="tn-sep"></div>
     <div class="tn-user"><div class="tn-avatar" id="tn-avatar">T</div><span class="tn-uname" id="tn-uname">Tainah</span><span class="tn-role" id="tn-role">Editor</span></div>
     <div class="tn-sep"></div>
-    <button class="tn-btn" onclick="doLogout()" title="Sair da conta" style="padding:4px 10px;color:rgba(255,255,255,.6)"><i class="ti ti-logout" style="font-size:11px"></i> Sair</button>
+    <button class="tn-btn" id="logout-btn" onclick="doLogout()" title="Sair da conta" style="padding:4px 10px;color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3);flex-shrink:0"><i class="ti ti-logout" style="font-size:11px"></i> Sair</button>
   </div>
 </div>
 
@@ -456,9 +456,10 @@ table.pft tr:hover td{background:var(--bg2)}
 <!-- ══ SCHEDULE ══ -->
 <div class="view" id="view-schedule">
   <div id="se-hdr">
-    <button class="seb" onclick="showView('portfolio')"><i class="ti ti-arrow-left" style="font-size:10px"></i> Voltar</button>
+    <button class="seb" onclick="showView('portfolio');history.replaceState(null,'',window.location.pathname)"><i class="ti ti-arrow-left" style="font-size:10px"></i> Voltar</button>
     <h2 id="se-title">Selecione um projeto</h2>
     <a class="se-jira" id="se-jira-lnk" href="#" target="_blank" style="display:none"><i class="ti ti-brand-jira"></i><span id="se-jira-key"></span></a>
+    <button class="seb" id="copy-link-btn" onclick="copyScheduleLink()" style="display:none" title="Copiar link direto para este cronograma"><i class="ti ti-link" style="font-size:10px"></i> Copiar link</button>
     <div class="vg">
       <button class="vbtn" onclick="setZoom('day')">Dias</button>
       <button class="vbtn" onclick="setZoom('week')">Semanas</button>
@@ -1454,6 +1455,9 @@ function openProject(key){
     alert('Você não tem acesso a este projeto.');return;
   }
   curKey=key;const p=PROJECTS.find(x=>x.key===key);
+  // Update browser URL so this page can be shared/bookmarked
+  const schedUrl=window.location.href.split('?')[0]+'?project='+key;
+  history.replaceState(null,'',schedUrl);
   if(!schedules[key])schedules[key]={milestones:[],tasks:[],access:[{email:(currentUser?.email||'tainah.andrade@bemobi.com'),role:'editor'}],auditLog:[],updates:[],calendar:'BR',baseline:null};
   collapsed.clear();viewOffset=0;
   document.getElementById('se-title').textContent=p.summary.length>35?p.summary.slice(0,35)+'…':p.summary;
@@ -2157,8 +2161,13 @@ async function autoLoadOnLogin() {
   renderUpdatesProjectList();
   // Step 3: Sync fresh data from Jira in background
   autoSyncProjectsFromJira();
-  // Step 4: External users go to their project
-  if (currentUser?.role === 'external') {
+  // Step 4: Check URL param for direct project link
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectParam = urlParams.get('project');
+  if (projectParam && canViewProject(projectParam)) {
+    openProject(projectParam);
+  } else if (currentUser?.role === 'external') {
+    // External users go to their project
     const myProjects = PROJECTS.filter(p => canViewProject(p.key));
     if (myProjects.length === 1) openProject(myProjects[0].key);
   }
@@ -2196,6 +2205,8 @@ async function autoSyncProjectsFromJira() {
       applyJiraSync(d.projects);
       setSyncTxt('ok', `✓ ${d.projects.length} projetos`);
       setTimeout(() => setSyncTxt('idle',''), 4000);
+      // Sync schedule URLs in background
+      syncAllScheduleUrls();
     } else {
       console.warn('autoSync: resposta inválida', d);
       setSyncTxt('idle','');
@@ -2248,6 +2259,8 @@ async function syncFromJira(){
         applyJiraSync(d.projects);
         setSyncTxt('ok',`✓ ${d.projects.length} projetos atualizados`);
         setTimeout(()=>setSyncTxt('idle',''),5000);
+        // Also sync schedule URLs to Jira for all projects with schedules
+        syncAllScheduleUrls();
       } else {
         showSyncError(d.error||'Resposta inválida do GAS: '+(JSON.stringify(d).slice(0,100)));
       }
@@ -2426,6 +2439,60 @@ function parseSyncJson(){
 }
 function getGoLive(key){const s=schedules[key];if(!s)return null;return(s.milestones||[]).map(m=>m.deadline).filter(Boolean).sort().pop()||null;}
 function setSyncTxt(state,msg){const el=document.getElementById('sync-txt');if(!el)return;const icons={idle:'<i class="ti ti-brand-jira" style="font-size:10px"></i>',syncing:'<i class="ti ti-loader spin" style="font-size:10px"></i>',ok:'<i class="ti ti-circle-check" style="font-size:10px;color:#4ade80"></i>',error:'<i class="ti ti-circle-x" style="font-size:10px;color:#f87171"></i>'};el.innerHTML=`${icons[state]||icons.idle} ${state==='syncing'?'Sincronizando…':msg||'one-bemobi.atlassian.net'}`;}
+// ── BULK SCHEDULE URL SYNC ───────────────────────────────
+// Sends schedule URLs to Jira customfield_29785 for all projects with schedules
+async function syncAllScheduleUrls() {
+  if (!GAS_URL || GAS_URL.includes('COLE_AQUI')) return;
+  const baseUrl = window.location.href.split('?')[0];
+  // Get all projects that have a schedule configured
+  const projectsWithSchedule = Object.keys(schedules).filter(key => {
+    const s = schedules[key];
+    return s && s.milestones && s.milestones.length > 0;
+  });
+  if (!projectsWithSchedule.length) return;
+  setSyncTxt('syncing', `Sincronizando ${projectsWithSchedule.length} URLs...`);
+  // Send in parallel (max 5 at a time to avoid rate limits)
+  const batchSize = 5;
+  let synced = 0;
+  for (let i = 0; i < projectsWithSchedule.length; i += batchSize) {
+    const batch = projectsWithSchedule.slice(i, i + batchSize);
+    await Promise.all(batch.map(async key => {
+      try {
+        const scheduleUrl = baseUrl + '?project=' + key;
+        const goLive = getGoLive(key);
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'syncGoLive',
+            issueKey: key,
+            goLiveDate: goLive,
+            scheduleUrl: scheduleUrl
+          })
+        });
+        synced++;
+      } catch(e) { console.warn(`syncUrl ${key} error:`, e.message); }
+    }));
+  }
+  setSyncTxt('ok', `✓ ${synced} URLs sincronizadas`);
+  setTimeout(() => setSyncTxt('idle', ''), 4000);
+}
+
+function copyScheduleLink(){
+  if(!curKey)return;
+  const url=window.location.href.split('?')[0]+'?project='+curKey;
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.getElementById('copy-link-btn');
+    const orig=btn.innerHTML;
+    btn.innerHTML='<i class="ti ti-check" style="font-size:10px"></i> Copiado!';
+    btn.style.borderColor='#4ade80';
+    btn.style.color='#4ade80';
+    setTimeout(()=>{btn.innerHTML=orig;btn.style.borderColor='';btn.style.color='';},2500);
+  }).catch(()=>{
+    prompt('Copie o link abaixo:',url);
+  });
+}
+
 async function syncToJira(key){
   if(!GAS_URL||GAS_URL.includes('COLE_AQUI'))return;
   setSyncTxt('syncing','');
