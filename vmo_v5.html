@@ -2071,6 +2071,10 @@ function initFirebase() {
   } catch(e) { console.error('Firebase init error:', e); }
 }
 
+const GAS_URL='https://script.google.com/macros/s/AKfycbwmx3JLoRyaFFnLmwef_tITK9_eWRweykmU3CklCBlMEoSGhRK460KHIvzC3DeFm7MWLw/exec';
+const JIRA_SYNC_FIELDS='summary,status,issuetype,duedate,created,customfield_28494,customfield_28488,customfield_29150,customfield_27831,customfield_29719';
+const JIRA_JQL='project = VMO AND issuetype in (Comercial, Produtos, Tarefa) ORDER BY customfield_28488 ASC';
+
 // ── PERSISTENCE ──────────────────────────────────────────
 async function persistSchedule(key) {
   if (!schedules[key]) return;
@@ -2303,8 +2307,23 @@ function openFileSyncModal(){
 function applyJiraSync(freshProjects){
   freshProjects.forEach(fp=>{
     const idx=PROJECTS.findIndex(p=>p.key===fp.key);
-    if(idx>=0){ Object.assign(PROJECTS[idx],fp); } else { PROJECTS.push(fp); }
+    if(idx>=0){
+      // Explicitly update all Jira fields including priority
+      PROJECTS[idx].summary  = fp.summary  ?? PROJECTS[idx].summary;
+      PROJECTS[idx].status   = fp.status   ?? PROJECTS[idx].status;
+      PROJECTS[idx].type     = fp.type     ?? PROJECTS[idx].type;
+      PROJECTS[idx].priority = fp.priority ?? PROJECTS[idx].priority;
+      PROJECTS[idx].gp       = fp.gp       ?? PROJECTS[idx].gp;
+      PROJECTS[idx].golive   = fp.golive   ?? PROJECTS[idx].golive;
+      PROJECTS[idx].duedate  = fp.duedate  ?? PROJECTS[idx].duedate;
+      PROJECTS[idx].times    = fp.times    ?? PROJECTS[idx].times;
+      PROJECTS[idx].created  = fp.created  ?? PROJECTS[idx].created;
+    } else {
+      PROJECTS.push(fp);
+    }
   });
+  // Re-sort by Nova Prioridade after sync
+  PROJECTS.sort((a,b)=>(a.priority??9999)-(b.priority??9999));
   renderKPI();renderPortfolio();renderUpdatesProjectList();
   document.getElementById('badge-pf').textContent=PROJECTS.length;
   showSyncSuccess(freshProjects.length);
